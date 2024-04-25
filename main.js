@@ -1,46 +1,77 @@
 class EloRatingSystem {
     constructor(kFactor = 32, defaultRating = 1200) {
-        this.kFactor = kFactor; // Factor determining the adjustment magnitude
-        this.defaultRating = defaultRating; // Default rating for new players
-        this.ratings = {}; // Stores player ratings
+        this.kFactor = kFactor;
+        this.defaultRating = defaultRating;
+        this.ratings = {};
     }
 
-    // Ensure player exists in the rating system or initialize them
     ensurePlayer(player) {
         if (!this.ratings[player]) {
             this.ratings[player] = this.defaultRating;
         }
     }
 
-    // Calculate the expected score between two players
+    setInitialRating(player, rating) {
+        this.ratings[player] = rating;
+    }
+
     getExpectedScore(playerA, playerB) {
         const ratingA = this.ratings[playerA];
         const ratingB = this.ratings[playerB];
         return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
     }
 
-    // Update ratings based on the actual outcome of the game
-    updateRating(winner, loser) {
-        this.ensurePlayer(winner);
-        this.ensurePlayer(loser);
+    updateRating(playerA, playerB, outcome) {
+        this.ensurePlayer(playerA);
+        this.ensurePlayer(playerB);
 
-        const expectedScoreWinner = this.getExpectedScore(winner, loser);
-        const expectedScoreLoser = this.getExpectedScore(loser, winner);
+        const expectedScoreA = this.getExpectedScore(playerA, playerB);
+        const expectedScoreB = this.getExpectedScore(playerB, playerA);
 
-        this.ratings[winner] += this.kFactor * (1 - expectedScoreWinner);
-        this.ratings[loser] += this.kFactor * (0 - expectedScoreLoser);
+        let scoreA, scoreB;
+
+        if (outcome === "A wins") {
+            scoreA = 1;
+            scoreB = 0;
+        } else if (outcome === "B wins") {
+            scoreA = 0;
+            scoreB = 1;
+        } else { // Draw
+            scoreA = 0.5;
+            scoreB = 0.5;
+        }
+
+        this.ratings[playerA] += this.kFactor * (scoreA - expectedScoreA);
+        this.ratings[playerB] += this.kFactor * (scoreB - expectedScoreB);
     }
 
-    // Get the current rating of a player
     getRating(player) {
         this.ensurePlayer(player);
-        return this.ratings[player];
+        return Math.round(this.ratings[player]);
     }
 }
 
 // Example usage
 const elo = new EloRatingSystem();
 
-elo.updateRating('Alice', 'Bob');
-console.log(`Alice's Rating: ${elo.getRating('Alice')}`);
-console.log(`Bob's Rating: ${elo.getRating('Bob')}`);
+// Set initial ratings
+elo.setInitialRating('Alice', 1300);
+elo.setInitialRating('Bob', 1250);
+console.log(`Initial ratings: Alice: ${elo.getRating('Alice')}, Bob: ${elo.getRating('Bob')}`);
+
+
+// Update ratings based on different outcomes
+elo.updateRating('Alice', 'Bob', 'A wins');
+console.log(`After Alice wins: Alice's Rating: ${elo.getRating('Alice')}, Bob's Rating: ${elo.getRating('Bob')}`);
+
+elo.updateRating('Alice', 'Bob', 'B wins');
+console.log(`After Bob wins: Alice's Rating: ${elo.getRating('Alice')}, Bob's Rating: ${elo.getRating('Bob')}`);
+
+elo.updateRating('Alice', 'Bob', 'draw');
+console.log(`After a draw: Alice's Rating: ${elo.getRating('Alice')}, Bob's Rating: ${elo.getRating('Bob')}`);
+
+elo.updateRating('Alice', 'Bob', 'A wins');
+console.log(`After Alice wins: Alice's Rating: ${elo.getRating('Alice')}, Bob's Rating: ${elo.getRating('Bob')}`);
+
+elo.updateRating('Alice', 'Bob', 'B wins');
+console.log(`After Bob wins: Alice's Rating: ${elo.getRating('Alice')}, Bob's Rating: ${elo.getRating('Bob')}`);
